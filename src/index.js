@@ -4,12 +4,40 @@ const cors = require('cors');
 const firebaseAdmin = require('firebase-admin');
 const firestore = require('firebase/firestore');
 const firebaseApp = require('firebase/app');
-const firebaseServiceAccount = require('./config/firebaseServiceAccountKey.json');
-const firebaseSdk = require('./config/firebaseSDK.json');
+// const firebaseServiceAccount = require('./config/firebaseServiceAccountKey.json');
+const firebaseServiceAccount2 = require('./config/firebaseServiceAccountKeys.json');
+const firebaseSdk2 = require('./config/firebaseSDKs.json');
+//const firebaseSdk = require('./config/firebaseSDK.json');
 const app = express();
+const crypto = require('crypto-js');
 
 app.use(cors());
 app.use(express.json());
+
+
+const decrypt = (text, key) => {
+  try {
+    //console.log(text);
+    const str = crypto.AES.decrypt(text, key);
+    return JSON.parse(str.toString(crypto.enc.Utf8));
+  }catch(err) {
+    console.log(err);
+  }
+}
+
+const encrypt = () => {
+  return ;
+  //crypto.AES.encrypt(JSON.stringify(firebaseSdk), "noti-server").toString();
+  //crypto.AES.encrypt(JSON.stringify(firebaseServiceAccount), "noti-server").toString();
+}
+
+// console.log(encrypt());
+
+// console.log(decrypt(firebaseServiceAccount2.key, "noti-server"));
+
+const firebaseServiceAccount = decrypt(firebaseServiceAccount2.key, "noti-server")
+// console.log(firebaseServiceAccount)
+const firebaseSdk = decrypt(firebaseSdk2.key, "noti-server");
 
 const documentName = 'notification_users';
 
