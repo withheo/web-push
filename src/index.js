@@ -10,10 +10,13 @@ const firebaseSdk2 = require('./config/firebaseSDKs.json');
 //const firebaseSdk = require('./config/firebaseSDK.json');
 const app = express();
 const crypto = require('crypto-js');
+const moment = require('moment')
 
 app.use(cors());
 app.use(express.json());
 
+const documentName = 'notification_users';
+const cryptoKey = 'noti-server';
 
 const decrypt = (text, key) => {
   try {
@@ -32,14 +35,11 @@ const encrypt = () => {
 }
 
 // console.log(encrypt());
-
 // console.log(decrypt(firebaseServiceAccount2.key, "noti-server"));
 
-const firebaseServiceAccount = decrypt(firebaseServiceAccount2.key, "noti-server")
-// console.log(firebaseServiceAccount)
-const firebaseSdk = decrypt(firebaseSdk2.key, "noti-server");
+const firebaseServiceAccount = decrypt(firebaseServiceAccount2.key, cryptoKey);
+const firebaseSdk = decrypt(firebaseSdk2.key, cryptoKey);
 
-const documentName = 'notification_users';
 
 const firebaseAdminApp = firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.cert(firebaseServiceAccount)
@@ -99,14 +99,16 @@ const sendNotificationUser = async (token, data) => {
 
 app.post('/notification/send/:userid', async (req, res) => {
   const userid = req.params.userid;
+  const { title , content } = req.body;
   const doc = await getDocByUser(userid);
   if (doc === false) {
     res.status(404).send({msg: "not found"});
   } else {
 
     await sendNotificationUser(doc.data().token, {
-      title: '안녕하세요',
-      content: '내용입니다.'
+      title: title ?? '안녕하세요',
+      content: content ?? '내용입니다.',
+      sended_at: moment().format("YYYY년MM월DD일 HH시mm분ss초")
     });
 
     res.send({msg: doc.data()})
