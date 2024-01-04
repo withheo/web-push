@@ -53,9 +53,9 @@ const getAllNotificationUsers = async () => {
   const { collection, query, getDocs } = firestore; 
   const q = query(collection(db, documentName));
   const docsnap = await getDocs(q); 
-   console.log(docsnap);
+   //console.log(docsnap);
    docsnap.forEach((doc) => {
-    console.log(doc.data());
+   // console.log(doc.data());
    })
 }
 
@@ -68,11 +68,27 @@ const addNotification = async (data) => {
 const getDocByUser = async (user_id) => {
   const db = firestore.getFirestore(firebaseAppInstance);
   const { collection, query, getDocs, where } = firestore; 
-  const q = query(collection(db, documentName), where("user_id", "==", user_id));
+  const q = query(collection(db, documentName), user_id ? where("user_id", "==", user_id) : null);
+  
   const docsnap = await getDocs(q); 
-  let data = "";
+  const data = [];
   docsnap.forEach((doc) => {
-    data = doc;
+    data.push(doc);
+  })
+  // console.log(docsnap.size);
+  return new Promise((resolve) => {
+    resolve(docsnap.size > 0 ? (user_id ? data[0] : data) : false);
+  });
+}
+
+const getDocUseUser = async() => {
+  const db = firestore.getFirestore(firebaseAppInstance);
+  const { collection, query, getDocs, where } = firestore; 
+  const q = query(collection(db, documentName), where("use", "==", true));
+  const docsnap = await getDocs(q); 
+  const data = [];
+  docsnap.forEach((doc) => {
+    data.push(doc);
   })
   return new Promise((resolve) => {
     resolve(docsnap.size > 0 ? data : false);
@@ -85,16 +101,48 @@ const updateNotification = async (data, docSnap) => {
   const updateDocs = doc(db, documentName , docSnap.id);
   await updateDoc(updateDocs, data);
   return  new Promise((resolve) => {
-    console.log("update")
+    //console.log("update")
     resolve(true);
   });
 }
 
 const sendNotificationUser = async (token, data) => {
   const messaging = firebaseAdminApp.messaging();
-  await messaging.sendToDevice(token, {
+  const messages = {
+    token,
     data,
-  })
+    // notification: {
+    //   title: "알림",
+    //   body: "내용"
+    // },
+    android: {
+      priority: "high"
+    },
+    webpush: {
+      headers: {
+        Urgency: "high",
+        ttl: "5000"
+      }
+    },
+    fcmOptions: {
+      analyticsLabel: "web-push"
+    }
+  }
+
+  // console.log(messages);
+
+  await messaging.send(messages);
+  // await messaging.sendEachForMulticast(messages);
+  // 
+  // await messaging.sendToDevice(token, {
+  //   data,
+  // }, {
+  //   priority: "high"
+  // })
+
+  // await messaging.sendToDevice(token, {
+  //   data,
+  // })
 }
 
 app.post('/notification/send/:userid', async (req, res) => {
@@ -104,6 +152,36 @@ app.post('/notification/send/:userid', async (req, res) => {
   if (doc === false) {
     res.status(404).send({msg: "not found"});
   } else {
+
+    // console.log(doc.data().token, {
+    //   title: title ?? '안녕하세요',
+    //   content: content ?? '내용입니다.',
+    //   sended_at: moment().format("YYYY년MM월DD일 HH시mm분ss초")
+    // });
+
+    sendNotificationUser(doc.data().token, {
+      title: title ?? '안녕하세요',
+      content: content ?? '내용입니다.',
+      sended_at: moment().format("YYYY년MM월DD일 HH시mm분ss초")
+    });
+
+    res.send({msg: doc.data()})
+  }
+});
+
+app.get('/notification/sends/:userid', async (req, res) => {
+  const userid = req.params.userid;
+  const { title , content } = req.body;
+  const doc = await getDocByUser(userid);
+  if (doc === false) {
+    res.status(404).send({msg: "not found"});
+  } else {
+
+    // console.log(doc.data().token, {
+    //   title: title ?? '안녕하세요',
+    //   content: content ?? '내용입니다.',
+    //   sended_at: moment().format("YYYY년MM월DD일 HH시mm분ss초")
+    // });
 
     await sendNotificationUser(doc.data().token, {
       title: title ?? '안녕하세요',
@@ -126,7 +204,7 @@ app.post('/notification', async (req, res) => {
     await addNotification(body);
   } else {
     await updateNotification(body, doc);
-    console.log("body ", "이미있따")
+    //console.log("body ", "이미있따")
   }
   
   res.send({msg: "ok notification"})
@@ -134,9 +212,9 @@ app.post('/notification', async (req, res) => {
 
 app.get('/' , async (req, res) => {
   // getAccessToken();
-  console.log(1);
+  // console.log(1);
   // addNotification();
-  sendNotificationUser();
+  // sendNotificationUser();
   res.send("OK")
 });
 
@@ -147,6 +225,17 @@ app.get("/notification/user/:userid" , async (req, res) => {
     res.status(404).send({msg: "not found"});
   } else {
     res.send({msg: doc.data()})
+  }
+})
+
+app.get("/notification/user" , async (req, res) => {
+  const type = req.query.type;
+  const docs = await getDocUseUser();
+  if (docs === false) {
+    res.status(404).send({msg: "not found"});
+  } else {
+    const arrageData = docs.map((doc) => doc.data())
+    res.send({msg:arrageData})
   }
 })
 
