@@ -1,12 +1,13 @@
 const router = require('express').Router();
 const SimpleWebAuthnServer = require('@simplewebauthn/server');
-
+const cookie = require('cookie');
 
 const rpID = "vue3-with-pwa.vercel.app";
 const loggedInUserId = 'user001';
 const devices = [];
 const { generateRegistrationOptions, verifyRegistrationResponse } = require('@simplewebauthn/server');
 const expectedOrigin = `https://${rpID}`;
+const defaultTimeOut = 60000;
 
 /**
  * Login 처음 하고 기기 등록시 이미 login user는 한명 있다고 가정한다.
@@ -30,7 +31,7 @@ router.get('/generate-registration-options' , async (req, res) => {
     rpID,
     userID: loggedInUserId,
     userName: user.username,
-    timeout: 60000,
+    timeout: defaultTimeOut,
     attestationType: 'none',
     /**
      * Passing in a user's list of already-registered authenticator IDs here prevents users from
@@ -64,6 +65,7 @@ router.get('/generate-registration-options' , async (req, res) => {
     httpOnly: true,
     sameSite: false,
     secure: true,
+    maxAge: defaultTimeOut,
   });  
 
   res.send({msg: "ok", data: options})
@@ -71,9 +73,13 @@ router.get('/generate-registration-options' , async (req, res) => {
 
 router.post('/verify-registration', async (req, res) => {
   const body = req.body;
-  const expectedChallenge = res.cookie("webAuthn");
-  let dbAuthenticator;
+  let cookies; 
+  if (request.headers.cookie !== undefined){
+    cookies = cookie.parse(request.headers.cookie);
+  }
+  const expectedChallenge = cookies.webAuthn;
 
+  let dbAuthenticator;
   const user = inMemoryUserDeviceDB[loggedInUserId];
 
 
@@ -117,7 +123,7 @@ router.post('/verify-registration', async (req, res) => {
 
   if (verified) {
     // Update the authenticator's counter in the DB to the newest count in the authentication
-    dbAuthenticator.counter = authenticationInfo.newCounter;
+    // dbAuthenticator.counter = authenticationInfo.newCounter;
   }
 
   res.clearCookie('webAuthn', {  httpOnly: true,
