@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const SimpleWebAuthnServer = require('@simplewebauthn/server');
-const rpID = "localhost";
+const rpID = "vue3-with-pwa.vercel.app";
 const username = "unkown";
 const loggedInUserId = username;
 const devices = [];
