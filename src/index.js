@@ -1,6 +1,7 @@
 
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const firebaseAdmin = require('firebase-admin');
 const firestore = require('firebase/firestore');
 const firebaseApp = require('firebase/app');
@@ -16,7 +17,20 @@ const moment = require('moment')
 
 const authnRouter = require('./router/authn');
 
-app.use(cors());
+const whitelist = ['http://localhost:8080', 'https://vue3-with-pwa.vercel.app' ]
+const corsOptions = {
+  credentials: true,
+  origin: function(origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  }
+}
+
+app.use(cookieParser());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const documentName = 'notification_users';

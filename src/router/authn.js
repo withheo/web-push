@@ -60,12 +60,18 @@ router.get('/generate-registration-options' , async (req, res) => {
 
   const options = await generateRegistrationOptions(opts);
 
+  res.cookie("webAuthn", options.challenge, {
+    httpOnly: true,
+    sameSite: false,
+    secure: true,
+  });  
+
   res.send({msg: "ok", data: options})
 });
 
 router.post('/verify-registration', async (req, res) => {
   const body = req.body;
-  const expectedChallenge = new Uint8Array(32); //임의 값으로 처리
+  const expectedChallenge = res.cookie("webAuthn");
   let dbAuthenticator;
 
   const user = inMemoryUserDeviceDB[loggedInUserId];
@@ -113,6 +119,11 @@ router.post('/verify-registration', async (req, res) => {
     // Update the authenticator's counter in the DB to the newest count in the authentication
     dbAuthenticator.counter = authenticationInfo.newCounter;
   }
+
+  res.clearCookie('webAuthn', {  httpOnly: true,
+    sameSite: false,
+    secure: true,
+  });
 
   req.session.currentChallenge = undefined;
   res.send({ verified });
