@@ -5,7 +5,7 @@ const SimpleWebAuthnServer = require('@simplewebauthn/server');
 const rpID = "vue3-with-pwa.vercel.app";
 const loggedInUserId = 'user001';
 const devices = [];
-const { generateRegistrationOptions, verifyAuthenticationResponse } = require('@simplewebauthn/server');
+const { generateRegistrationOptions, verifyRegistrationResponse } = require('@simplewebauthn/server');
 const expectedOrigin = `https://${rpID}`;
 
 /**
