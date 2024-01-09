@@ -9,6 +9,8 @@ const { generateRegistrationOptions, verifyRegistrationResponse } = require('@si
 const expectedOrigin = `https://${rpID}`;
 const defaultTimeOut = 60000;
 
+const { isoBase64URL, isoUint8Array } = require('@simplewebauthn/server/helpers');
+
 /**
  * Login 처음 하고 기기 등록시 이미 login user는 한명 있다고 가정한다.
  * 우선 등록된 devices 정보 X
