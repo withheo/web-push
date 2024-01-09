@@ -1,18 +1,34 @@
 const router = require('express').Router();
 const SimpleWebAuthnServer = require('@simplewebauthn/server');
+
+
 const rpID = "vue3-with-pwa.vercel.app";
-const username = "unkown";
-const loggedInUserId = username;
+const loggedInUserId = 'user001';
 const devices = [];
-const { generateRegistrationOptions } = require('@simplewebauthn/server');
+const { generateRegistrationOptions, verifyAuthenticationResponse } = require('@simplewebauthn/server');
+const expectedOrigin = `https://${rpID}`;
+
+/**
+ * Login 처음 하고 기기 등록시 이미 login user는 한명 있다고 가정한다.
+ * 우선 등록된 devices 정보 X
+ */
+const inMemoryUserDeviceDB = {
+  [loggedInUserId]: {
+    id: loggedInUserId,
+    username: `${loggedInUserId}@${rpID}`,
+    devices: [],
+  },
+};
 
 router.get('/generate-registration-options' , async (req, res) => {
 
+  const user = inMemoryUserDeviceDB[loggedInUserId];
+  
   const opts = {
-    rpName: 'SimpleWebAuthn Example',
+    rpName: 'Web Authn Login',
     rpID,
     userID: loggedInUserId,
-    userName: username,
+    userName: user.userName,
     timeout: 60000,
     attestationType: 'none',
     /**
@@ -44,6 +60,61 @@ router.get('/generate-registration-options' , async (req, res) => {
   const options = await generateRegistrationOptions(opts);
 
   res.send({msg: "ok", data: options})
+});
+
+router.post('/verify-registration', async (req, res) => {
+  const body = req.body;
+  const expectedChallenge = new Uint8Array(32); //임의 값으로 처리
+  let dbAuthenticator;
+
+  const user = inMemoryUserDeviceDB[loggedInUserId];
+
+
+  try {
+    const opts = {
+      response: body,
+      expectedChallenge: `${expectedChallenge}`,
+      expectedOrigin,
+      expectedRPID: rpID,
+      requireUserVerification: false,
+    };
+    verification = await verifyRegistrationResponse(opts);
+  } catch (error) {
+    const _error = error ;
+    console.error(_error);
+    return res.status(400).send({ error: _error.message });
+  }
+
+  const { verified, registrationInfo } = verification;
+  if (verified && registrationInfo) { 
+    const { credentialPublicKey, credentialID, counter } = registrationInfo;
+
+    const existingDevice = user.devices.find((device) =>
+      isoUint8Array.areEqual(device.credentialID, credentialID)
+    );
+
+    if (!existingDevice) {
+      /**
+       * Add the returned device to the user's list of devices
+       */
+      const newDevice = {
+        credentialPublicKey,
+        credentialID,
+        counter,
+        transports: body.response.transports,
+      };
+
+      user.devices.push(newDevice);
+    }
+  }
+
+  if (verified) {
+    // Update the authenticator's counter in the DB to the newest count in the authentication
+    dbAuthenticator.counter = authenticationInfo.newCounter;
+  }
+
+  req.session.currentChallenge = undefined;
+  res.send({ verified });
 });
 
 module.exports = router;
