@@ -131,7 +131,7 @@ router.post('/verify-registration', async (req, res) => {
     secure: true,
   });
 
-  req.session.currentChallenge = undefined;
+  // req.session.currentChallenge = undefined;
   res.send({ verified });
 });
 
