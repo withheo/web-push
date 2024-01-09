@@ -76,8 +76,10 @@ router.post('/verify-registration', async (req, res) => {
   let cookies; 
   if (req.headers && req.headers.cookie !== undefined){
     cookies = cookie.parse(req.headers.cookie);
+    console.log("cookies ... ", cookies);
   }
-  const expectedChallenge = cookies.webAuthn;
+  console.log("cookies .", cookies);
+  const expectedChallenge = cookies ? cookies.webAuthn : "";
 
   let dbAuthenticator;
   const user = inMemoryUserDeviceDB[loggedInUserId];
