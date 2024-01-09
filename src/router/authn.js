@@ -74,8 +74,8 @@ router.get('/generate-registration-options' , async (req, res) => {
 router.post('/verify-registration', async (req, res) => {
   const body = req.body;
   let cookies; 
-  if (request.headers.cookie !== undefined){
-    cookies = cookie.parse(request.headers.cookie);
+  if (req.headers && req.headers.cookie !== undefined){
+    cookies = cookie.parse(req.headers.cookie);
   }
   const expectedChallenge = cookies.webAuthn;
 
