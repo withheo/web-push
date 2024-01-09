@@ -8,6 +8,7 @@ const firebaseApp = require('firebase/app');
 const firebaseServiceAccount2 = require('./config/firebaseServiceAccountKeys.json');
 const firebaseSdk2 = require('./config/firebaseSDKs.json');
 // const { server }  = require('@passwordless-id/webauthn');
+const SimpleWebAuthnServer = require('@simplewebauthn/server');
 
 //const firebaseSdk = require('./config/firebaseSDK.json');
 const app = express();
