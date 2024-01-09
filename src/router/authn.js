@@ -61,11 +61,12 @@ router.get('/generate-registration-options' , async (req, res) => {
 
   const options = await generateRegistrationOptions(opts);
 
+  console.log("쿠키를 생성 합니다. ", options.challenge, req.headers.cookie)
   res.cookie("webAuthn", options.challenge, {
     httpOnly: true,
     sameSite: false,
     secure: true,
-    maxAge: defaultTimeOut,
+    // maxAge: defaultTimeOut,
   });  
 
   res.send({msg: "ok", data: options})
