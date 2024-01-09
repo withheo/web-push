@@ -23,12 +23,13 @@ const inMemoryUserDeviceDB = {
 router.get('/generate-registration-options' , async (req, res) => {
 
   const user = inMemoryUserDeviceDB[loggedInUserId];
+  console.log(user);
   
   const opts = {
     rpName: 'Web Authn Login',
     rpID,
     userID: loggedInUserId,
-    userName: user.userName,
+    userName: user.username,
     timeout: 60000,
     attestationType: 'none',
     /**
