@@ -228,80 +228,118 @@ router.post('/verify-registration', async (req, res) => {
 });
 
 
-router.get('/generate-authentication-options' , async (req, res) => {
+router.post('/generate-authentication-options' , async (req, res) => {
   // 유저를 알 수 없겠지.. 흠... 
-  const user = inMemoryUserDeviceDB[loggedInUserId];
-  const opts = {
-    timeout: defaultTimeOut,
-    allowCredentials: user.devices.map((dev) => ({
-      id: dev.credentialID,
-      type: 'public-key',
-      transports: dev.transports,
-    })), // 우선 null 
-    rpID,
-    userVerification: 'preferred',
+  const body = req.body;
+  const { data } = body;
+  console.log(data);
+  const userDoc = await getDocByKey(data);
+  if (userDoc) {
+    const user = userDoc.data();
+    const device = user.newDevice;
+    const credentialID = new Uint8Array([...atob(device.credentialID)].map(char => char.charCodeAt(0)));
+   
+    const opts = {
+      timeout: defaultTimeOut,
+      allowCredentials: [{
+        id: credentialID,
+        type: 'public-key',
+        transports: dev.transports,
+      }],
+      // user.devices.map((dev) => ({
+      //   id: dev.credentialID,
+      //   type: 'public-key',
+      //   transports: dev.transports,
+      // })), // 우선 null 
+      rpID,
+      userVerification: 'preferred',
+    }
+
+    const options = await generateAuthenticationOptions(opts);
+
+    console.log("쿠키를 생성 합니다. ", options.challenge, req.headers.cookie)
+    res.cookie("webAuthn", options.challenge, {
+      httpOnly: true,
+      sameSite: 'None',
+      secure: true,
+      maxAge: defaultTimeOut,
+    });  
+    
+    res.send({msg: "ok", data: options})
+  } else {
+    return res.status(500).send({msg : "등록자를 찾지 못했습니다."})
   }
 
-  const options = await generateAuthenticationOptions(opts);
-
-  console.log("쿠키를 생성 합니다. ", options.challenge, req.headers.cookie)
-  res.cookie("webAuthn", options.challenge, {
-    httpOnly: true,
-    sameSite: 'None',
-    secure: true,
-    maxAge: defaultTimeOut,
-  });  
+  // const user = inMemoryUserDeviceDB[loggedInUserId];
+  // const opts = {
+  //   timeout: defaultTimeOut,
+  //   allowCredentials: user.devices.map((dev) => ({
+  //     id: dev.credentialID,
+  //     type: 'public-key',
+  //     transports: dev.transports,
+  //   })), // 우선 null 
+  //   rpID,
+  //   userVerification: 'preferred',
+  // }
   
-  res.send({msg: "ok", data: options})
 });
 
 router.post('/verify-authentication', async (req, res) => {
   const body = req.body;
+  const { key, data } = body;
   let cookies; 
+
   if (req.headers && req.headers.cookie !== undefined){
     cookies = cookie.parse(req.headers.cookie);
   }
-  const expectedChallenge = cookies ? cookies.webAuthn : "";  
-  const user = inMemoryUserDeviceDB[loggedInUserId];
-  let dbAuthenticator;
-  const bodyCredIDBuffer = isoBase64URL.toBuffer(body.rawId);  
   res.clearCookie('webAuthn');
 
-  for (const dev of user.devices) {
-    if (isoUint8Array.areEqual(dev.credentialID, bodyCredIDBuffer)) {
-      dbAuthenticator = dev;
-      break;
+  const userDoc = await getDocByKey(key);
+  if (userDoc) {
+    const expectedChallenge = cookies ? cookies.webAuthn : "";  
+    const user = userDoc.data();
+    let authenticator;
+    const bodyCredIDBuffer = isoBase64URL.toBuffer(data.rawId);  
+    const device = user.newDevice;
+    const credentialID = new Uint8Array([...atob(device.credentialID)].map(char => char.charCodeAt(0)));
+    const userDevice = {
+        id: credentialID,
+        type: 'public-key',
+        transports: device.transports,
     }
-  }
 
-  if (!dbAuthenticator) {
+    if (isoUint8Array.areEqual(credentialID, bodyCredIDBuffer)) {
+      authenticator = userDevice;
+    }
+
+    try {
+      const opts = {
+        response: data,
+        expectedChallenge: `${expectedChallenge}`,
+        expectedOrigin,
+        expectedRPID: rpID,
+        authenticator: authenticator,
+        requireUserVerification: false,
+      };
+      verification = await verifyAuthenticationResponse(opts);
+    } catch (error) {
+      const _error = error;
+      console.error(_error);
+      return res.status(400).send({ error: _error.message });
+    }
+
+    const { verified, authenticationInfo } = verification;
+    if (verified) {
+      // Update the authenticator's counter in the DB to the newest count in the authentication
+      dbAuthenticator.counter = authenticationInfo.newCounter;
+    }
+    res.send({ verified });
+
+  } else {
     return res.status(400).send({
-      error: 'Authenticator is not registered with this site',
+      error: 'Authenticator 사용자 를 찾을 수 없습니다.',
     });
   }
-
-  try {
-    const opts = {
-      response: body,
-      expectedChallenge: `${expectedChallenge}`,
-      expectedOrigin,
-      expectedRPID: rpID,
-      authenticator: dbAuthenticator,
-      requireUserVerification: false,
-    };
-    verification = await verifyAuthenticationResponse(opts);
-  } catch (error) {
-    const _error = error;
-    console.error(_error);
-    return res.status(400).send({ error: _error.message });
-  }
-
-  const { verified, authenticationInfo } = verification;
-  if (verified) {
-    // Update the authenticator's counter in the DB to the newest count in the authentication
-    dbAuthenticator.counter = authenticationInfo.newCounter;
-  }
-  res.send({ verified });
 });
 
 module.exports = router;
