@@ -175,6 +175,10 @@ router.post('/verify-registration', async (req, res) => {
       transports: credential.response.transports,
     };
 
+    // base64로 변경해서 넣기
+    newDevice.credentialPublicKey = btoa(String.fromCharCode.apply(null, credentialPublicKey));
+    newDevice.credentialID = btoa(String.fromCharCode.apply(null, credentialID));
+
     console.log("newDevice : ", newDevice);
 
     // console.log("newDevice 1> ", newDevice);
