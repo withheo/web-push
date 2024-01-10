@@ -16,6 +16,9 @@ const defaultTimeOut = 60000;
 
 const { isoBase64URL, isoUint8Array } = require('@simplewebauthn/server/helpers');
 
+const { firebaseAppInstance, firestore , webAuthnDocumentName } = require('../helper/firebase');
+
+
 /**
  * Login 처음 하고 기기 등록시 이미 login user는 한명 있다고 가정한다.
  * 우선 등록된 devices 정보 X
@@ -28,15 +31,70 @@ const inMemoryUserDeviceDB = {
   },
 };
 
-router.get('/generate-registration-options' , async (req, res) => {
+const getDocByUser = async (user_id) => {
+  const db = firestore.getFirestore(firebaseAppInstance);
+  const { collection, query, getDocs, where } = firestore; 
+  const q = query(collection(db, webAuthnDocumentName), user_id ? where("user_id", "==", user_id) : null);
+  
+  const docsnap = await getDocs(q); 
+  const data = [];
+  docsnap.forEach((doc) => {
+    data.push(doc);
+  })
+  // console.log(docsnap.size);
+  return new Promise((resolve) => {
+    resolve(docsnap.size > 0 ? (user_id ? data[0] : data) : false);
+  });
+}
 
-  const user = inMemoryUserDeviceDB[loggedInUserId];
+const getDocByKey = async (key) => {
+  const db = firestore.getFirestore(firebaseAppInstance);
+  const { collection, query, getDocs, where } = firestore; 
+  const q = query(collection(db, webAuthnDocumentName), key ? where("key", "==", key) : null);
+  
+  const docsnap = await getDocs(q); 
+  const data = [];
+  docsnap.forEach((doc) => {
+    data.push(doc);
+  })
+  // console.log(docsnap.size);
+  return new Promise((resolve) => {
+    resolve(docsnap.size > 0 ? (key ? data[0] : data) : false);
+  });
+}
+
+const addDocUser = async (data) => {
+  const db = firestore.getFirestore(firebaseAppInstance);
+  const { collection, query, addDoc } = firestore; 
+  const docRef = await addDoc(collection(db, webAuthnDocumentName), data);
+}
+
+router.post('/generate-registration-options' , async (req, res) => {
+  const body = req.body;
+  const data = body.data.split(":");
+  let user;
+  const userDoc = await getDocByKey(data[0]);
+  if (userDoc) {
+    user = {
+      id: userDoc.data().key,
+      username: `${userDoc.data().user_id}@${rpID}`,
+      devices: [],
+    } 
+    return res.status(500).send({"msg": "이미 등록한 앱입니다."});    
+  } else {
+    user = {
+      id:  data[0],
+      username: `${data[1]}@${rpID}`,
+      devices: [],
+    }
+  } 
+
   console.log(user);
   
   const opts = {
     rpName: 'Web Authn Login',
     rpID,
-    userID: loggedInUserId,
+    userID: user.id,
     userName: user.username,
     timeout: defaultTimeOut,
     attestationType: 'none',
@@ -80,7 +138,8 @@ router.get('/generate-registration-options' , async (req, res) => {
 });
 
 router.post('/verify-registration', async (req, res) => {
-  const body = req.body;
+  const body = req.body;  
+  const { key, credential, user_id } = body;
   let cookies; 
   if (req.headers && req.headers.cookie !== undefined){
     cookies = cookie.parse(req.headers.cookie);
@@ -91,7 +150,7 @@ router.post('/verify-registration', async (req, res) => {
   const user = inMemoryUserDeviceDB[loggedInUserId];
   try {
     const opts = {
-      response: body,
+      response: credential,
       expectedChallenge: `${expectedChallenge}`,
       expectedOrigin,
       expectedRPID: rpID,
@@ -107,24 +166,39 @@ router.post('/verify-registration', async (req, res) => {
   const { verified, registrationInfo } = verification;
   if (verified && registrationInfo) { 
     const { credentialPublicKey, credentialID, counter } = registrationInfo;
+    // 정상적으로 등록 되었는지 확인 필dyu
+    // 사용자가 있는지 확인하고. 해당 디바이스 별로 넣어야 한다.
+    const newDevice = {
+      credentialPublicKey,
+      credentialID,
+      counter,
+      transports: credential.response.transports,
+    };
+    addDocUser({
+      key,
+      user_id,
+      newDevice,
+    });
 
-    const existingDevice = user.devices.find((device) =>
-      isoUint8Array.areEqual(device.credentialID, credentialID)
-    );
+    // const existingDevice = user.devices.find((device) =>
+    //   isoUint8Array.areEqual(device.credentialID, credentialID)
+    // );
 
-    if (!existingDevice) {
-      /**
-       * Add the returned device to the user's list of devices
-       */
-      const newDevice = {
-        credentialPublicKey,
-        credentialID,
-        counter,
-        transports: body.response.transports,
-      };
+    // if (!existingDevice) {
+    //   /**
+    //    * Add the returned device to the user's list of devices
+    //    */
+    //   const newDevice = {
+    //     credentialPublicKey,
+    //     credentialID,
+    //     counter,
+    //     transports: credential.response.transports,
+    //   };
 
-      user.devices.push(newDevice);
-    }
+    //   addDocUser(newDevice);
+
+      // user.devices.push(newDevice);
+    // }
   }
 
   if (verified) {
