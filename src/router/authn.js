@@ -332,8 +332,9 @@ router.post('/verify-authentication', async (req, res) => {
 
     const { verified, authenticationInfo } = verification;
     if (verified) {
+      // 인증횟수 카운트는 왜 ???
       // Update the authenticator's counter in the DB to the newest count in the authentication
-      dbAuthenticator.counter = authenticationInfo.newCounter;
+      // userDevice.counter = authenticationInfo.newCounter;
     }
     res.send({ verified });
 
