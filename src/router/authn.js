@@ -175,11 +175,11 @@ router.post('/verify-registration', async (req, res) => {
       transports: credential.response.transports,
     };
 
-    console.log("newDevice ", newDevice);
+    console.log("newDevice 1> ", newDevice);
     let decoder = new TextDecoder();
     newDevice.credentialID = decoder.decode(newDevice.credentialID);
-
-
+    newDevice.credentialPublicKey = decoder.decode(newDevice.credentialPublicKey);
+    console.log("newDevice 2> ", newDevice);
     addDocUser({
       key,
       user_id,
