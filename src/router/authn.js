@@ -5,7 +5,12 @@ const cookie = require('cookie');
 const rpID = "vue3-with-pwa.vercel.app";
 const loggedInUserId = 'user001';
 const devices = [];
-const { generateRegistrationOptions, verifyRegistrationResponse } = require('@simplewebauthn/server');
+const { 
+  generateRegistrationOptions, 
+  verifyRegistrationResponse, 
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} = require('@simplewebauthn/server');
 const expectedOrigin = `https://${rpID}`;
 const defaultTimeOut = 60000;
 
@@ -68,7 +73,7 @@ router.get('/generate-registration-options' , async (req, res) => {
     httpOnly: true,
     sameSite: 'None',
     secure: true,
-    // maxAge: defaultTimeOut,
+    maxAge: defaultTimeOut,
   });  
 
   res.send({msg: "ok", data: options})
@@ -79,15 +84,11 @@ router.post('/verify-registration', async (req, res) => {
   let cookies; 
   if (req.headers && req.headers.cookie !== undefined){
     cookies = cookie.parse(req.headers.cookie);
-    console.log("cookies ... ", cookies);
   }
-  console.log("cookies .", cookies);
   const expectedChallenge = cookies ? cookies.webAuthn : "";
 
   let dbAuthenticator;
   const user = inMemoryUserDeviceDB[loggedInUserId];
-
-
   try {
     const opts = {
       response: body,
@@ -137,6 +138,82 @@ router.post('/verify-registration', async (req, res) => {
   });
 
   // req.session.currentChallenge = undefined;
+  res.send({ verified });
+});
+
+
+router.get('/generate-authentication-options' , async (res, req) => {
+  // 유저를 알 수 없겠지.. 흠... 
+  const user = inMemoryUserDeviceDB[loggedInUserId];
+  const opts = {
+    timeout,
+    allowCredentials: user.devices.map((dev) => ({
+      id: dev.credentialID,
+      type: 'public-key',
+      transports: dev.transports,
+    })), // 우선 null 
+    rpID,
+    userVerification: 'preferred',
+  }
+
+  const options = await generateAuthenticationOptions(opts);
+
+  res.cookie("webAuthn", options.challenge, {
+    httpOnly: true,
+    sameSite: 'None',
+    secure: true,
+    maxAge: defaultTimeOut,
+  });
+  
+  res.send({msg: "ok", data: options})
+});
+
+router.post('/verify-authentication', async (req, res) => {
+  const body = req.body;
+  let cookies; 
+  if (req.headers && req.headers.cookie !== undefined){
+    cookies = cookie.parse(req.headers.cookie);
+  }
+  const expectedChallenge = cookies ? cookies.webAuthn : "";  
+  const user = inMemoryUserDeviceDB[loggedInUserId];
+  let dbAuthenticator;
+  const bodyCredIDBuffer = isoBase64URL.toBuffer(body.rawId);  
+  res.clearCookie('webAuthn');
+
+  for (const dev of user.devices) {
+    if (isoUint8Array.areEqual(dev.credentialID, bodyCredIDBuffer)) {
+      dbAuthenticator = dev;
+      break;
+    }
+  }
+
+  if (!dbAuthenticator) {
+    return res.status(400).send({
+      error: 'Authenticator is not registered with this site',
+    });
+  }
+
+  try {
+    const opts = {
+      response: body,
+      expectedChallenge: `${expectedChallenge}`,
+      expectedOrigin,
+      expectedRPID: rpID,
+      authenticator: dbAuthenticator,
+      requireUserVerification: false,
+    };
+    verification = await verifyAuthenticationResponse(opts);
+  } catch (error) {
+    const _error = error;
+    console.error(_error);
+    return res.status(400).send({ error: _error.message });
+  }
+
+  const { verified, authenticationInfo } = verification;
+  if (verified) {
+    // Update the authenticator's counter in the DB to the newest count in the authentication
+    dbAuthenticator.counter = authenticationInfo.newCounter;
+  }
   res.send({ verified });
 });
 
