@@ -142,7 +142,7 @@ router.post('/verify-registration', async (req, res) => {
 });
 
 
-router.get('/generate-authentication-options' , async (res, req) => {
+router.get('/generate-authentication-options' , async (req, res) => {
   // 유저를 알 수 없겠지.. 흠... 
   const user = inMemoryUserDeviceDB[loggedInUserId];
   const opts = {
@@ -158,12 +158,13 @@ router.get('/generate-authentication-options' , async (res, req) => {
 
   const options = await generateAuthenticationOptions(opts);
 
+  console.log("쿠키를 생성 합니다. ", options.challenge, req.headers.cookie)
   res.cookie("webAuthn", options.challenge, {
     httpOnly: true,
     sameSite: 'None',
     secure: true,
     maxAge: defaultTimeOut,
-  });
+  });  
   
   res.send({msg: "ok", data: options})
 });
