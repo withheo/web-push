@@ -20,13 +20,13 @@ const authnRouter = require('./router/authn');
 const whitelist = ['http://localhost:8080', 'https://vue3-with-pwa.vercel.app' ]
 const corsOptions = {
   credentials: true,
-  origin: function(origin, callback) {
-    if (whitelist.indexOf(origin) !== -1) {
-      callback(null, true)
-    } else {
-      callback(new Error('Not allowed by CORS'))
-    }
-  }
+  // origin: function(origin, callback) {
+  //   if (whitelist.indexOf(origin) !== -1) {
+  //     callback(null, true)
+  //   } else {
+  //     callback(new Error('Not allowed by CORS'))
+  //   }
+  // }
 }
 
 app.use(cookieParser());
@@ -234,7 +234,34 @@ app.get('/' , async (req, res) => {
   // console.log(1);
   // addNotification();
   // sendNotificationUser();
-  res.send("OK")
+  const db = firestore.getFirestore(firebaseAppInstance);
+  const { collection, query, getDocs, where } = firestore; 
+  const q = query(collection(db, "webauthn_users"), where("key", "==", "fd238f3e-7d67-41f4-b7d3-c85d022b7538"));
+  const docsnap = await getDocs(q); 
+  const data = [];
+  docsnap.forEach((doc) => {
+    data.push(doc);
+  })
+  const d = data[0].data();
+  const credentialPublicKey = d.newDevice.credentialPublicKey;
+  const credentialID = d.newDevice.credentialID;
+  const a =  new Uint8Array([
+    165,   1,   2,   3,  38,  32,   1,  33,  88,  32, 110,  15,
+    242,  24,  89, 206, 180, 178,  74,  21,  55, 244,  96, 122,
+    196, 255, 226, 130, 209,  64,  39, 141, 168, 153, 194,  18,
+     21,  73, 242, 206, 237, 156,  34,  88,  32, 200, 236,  66,
+    180, 187, 219,  59, 108,  56, 150,  75,  37, 195, 228, 152,
+     58,  66, 175, 242, 119, 108, 221,  98,  29, 226, 122,  16,
+    222, 159,  43,  26,  38
+  ]);
+  let decoder = new TextDecoder();
+  let encoder = new TextEncoder();
+  const c1 = encoder.encode(credentialPublicKey);
+
+  console.log(data[0].data());
+  console.log(c1);
+  console.log(decoder.decode(a));
+  res.send(data[0].data())
 });
 
 app.get("/notification/user/:userid" , async (req, res) => {
