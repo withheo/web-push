@@ -244,7 +244,7 @@ router.post('/generate-authentication-options' , async (req, res) => {
       allowCredentials: [{
         id: credentialID,
         type: 'public-key',
-        transports: dev.transports,
+        transports: device.transports,
       }],
       // user.devices.map((dev) => ({
       //   id: dev.credentialID,
