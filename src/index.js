@@ -20,13 +20,13 @@ const authnRouter = require('./router/authn');
 const whitelist = ['http://localhost:8080', 'https://vue3-with-pwa.vercel.app' ]
 const corsOptions = {
   credentials: true,
-  // origin: function(origin, callback) {
-  //   if (whitelist.indexOf(origin) !== -1) {
-  //     callback(null, true)
-  //   } else {
-  //     callback(new Error('Not allowed by CORS'))
-  //   }
-  // }
+  origin: function(origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  }
 }
 
 app.use(cookieParser());
