@@ -302,9 +302,11 @@ router.post('/verify-authentication', async (req, res) => {
     const bodyCredIDBuffer = isoBase64URL.toBuffer(data.rawId);  
     const device = user.newDevice;
     const credentialID = new Uint8Array([...atob(device.credentialID)].map(char => char.charCodeAt(0)));
+    const credentialPublicKey = new Uint8Array([...atob(device.credentialPublicKey)].map(char => char.charCodeAt(0)));
     const userDevice = {
-        id: credentialID,
-        type: 'public-key',
+        credentialID,
+        credentialPublicKey,
+        counter: 0,
         transports: device.transports,
     }
 
