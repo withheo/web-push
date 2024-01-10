@@ -146,7 +146,7 @@ router.get('/generate-authentication-options' , async (res, req) => {
   // 유저를 알 수 없겠지.. 흠... 
   const user = inMemoryUserDeviceDB[loggedInUserId];
   const opts = {
-    timeout,
+    timeout: defaultTimeOut,
     allowCredentials: user.devices.map((dev) => ({
       id: dev.credentialID,
       type: 'public-key',
