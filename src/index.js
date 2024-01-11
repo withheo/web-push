@@ -65,7 +65,7 @@ app.use(express.json());
 
 // const firebaseAppInstance = firebaseApp.initializeApp(firebaseSdk);
 
-const { firebaseAppInstance, firestore, documentName } = require('./helper/firebase');
+const { firebaseAppInstance, firestore, documentName, firebaseAdminApp } = require('./helper/firebase');
 
 const getAllNotificationUsers = async () => {
   const db = firestore.getFirestore(firebaseAppInstance);
