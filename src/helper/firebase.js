@@ -40,5 +40,6 @@ module.exports = {
   documentName,
   webAuthnDocumentName,
   firebaseAppInstance, 
-  firestore
+  firestore,
+  firebaseAdminApp
  }
