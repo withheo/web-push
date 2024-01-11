@@ -130,7 +130,7 @@ router.post('/generate-registration-options' , async (req, res) => {
   res.cookie("webAuthn", options.challenge, {
     httpOnly: true,
     sameSite: 'None',
-    secure: true,
+    secure: false,
     maxAge: defaultTimeOut,
   });  
 
@@ -218,10 +218,7 @@ router.post('/verify-registration', async (req, res) => {
     // dbAuthenticator.counter = authenticationInfo.newCounter;
   }
 
-  res.clearCookie('webAuthn', {  httpOnly: true,
-    sameSite: false,
-    secure: true,
-  });
+  res.clearCookie('webAuthn');
 
   // req.session.currentChallenge = undefined;
   res.send({ verified });
@@ -261,7 +258,7 @@ router.post('/generate-authentication-options' , async (req, res) => {
     res.cookie("webAuthn", options.challenge, {
       httpOnly: true,
       sameSite: 'None',
-      secure: true,
+      secure: false,
       maxAge: defaultTimeOut,
     });  
     
