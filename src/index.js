@@ -212,6 +212,10 @@ app.get('/notification/sends/:userid', async (req, res) => {
   }
 });
 
+app.get("/lived", (req, res) => {
+  res.send("ok");
+})
+
 
 app.post('/notification', async (req, res) => {
   const { body } = req;
