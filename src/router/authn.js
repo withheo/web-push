@@ -139,12 +139,12 @@ router.post('/generate-registration-options' , async (req, res) => {
 
 router.post('/verify-registration', async (req, res) => {
   const body = req.body;  
-  const { key, credential, user_id } = body;
+  const { key, credential, user_id, challenge } = body;
   let cookies; 
   if (req.headers && req.headers.cookie !== undefined){
     cookies = cookie.parse(req.headers.cookie);
   }
-  const expectedChallenge = cookies ? cookies.webAuthn : "";
+  const expectedChallenge = challenge; //cookies ? cookies.webAuthn : "";
 
   let dbAuthenticator;
   const user = inMemoryUserDeviceDB[loggedInUserId];
@@ -283,7 +283,7 @@ router.post('/generate-authentication-options' , async (req, res) => {
 
 router.post('/verify-authentication', async (req, res) => {
   const body = req.body;
-  const { key, data } = body;
+  const { key, data, challenge } = body;
   let cookies; 
 
   if (req.headers && req.headers.cookie !== undefined){
@@ -293,7 +293,7 @@ router.post('/verify-authentication', async (req, res) => {
 
   const userDoc = await getDocByKey(key);
   if (userDoc) {
-    const expectedChallenge = cookies ? cookies.webAuthn : "";  
+    const expectedChallenge = challenge; // cookies ? cookies.webAuthn : "";  
     const user = userDoc.data();
     let authenticator;
     const bodyCredIDBuffer = isoBase64URL.toBuffer(data.rawId);  

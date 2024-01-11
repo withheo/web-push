@@ -17,14 +17,14 @@ const app = express();
 const moment = require('moment')
 const authnRouter = require('./router/authn');
 
-const whitelist = ['http://localhost:8080', 'https://vue3-with-pwa.vercel.app' ]
+const whitelist = ['http://localhost:3000', 'http://localhost:8080', 'https://vue3-with-pwa.vercel.app' ]
 const corsOptions = {
   credentials: true,
   origin: function(origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {
       callback(null, true)
     } else {
-      callback(new Error('Not allowed by CORS'))
+      callback(new Error('Not allowed by CORS '+ origin))
     }
   }
 }
@@ -233,19 +233,9 @@ app.post('/notification', async (req, res) => {
   res.send({msg: "ok notification"})
 });
 
-app.get('/' , async (req, res) => {
-  // getAccessToken();
-  // console.log(1);
-  // addNotification();
-  // sendNotificationUser();
-  const db = firestore.getFirestore(firebaseAppInstance);
-  const { collection, query, getDocs, where , addDoc } = firestore; 
-  const q = addDoc(collection(db, "webauthn_users"), {
-    datas: new Uint8Array([3, 15])
-  });
- 
-
-  res.send("ok")
+app.get('/' , cors(), async (req, res) => {
+  res.set('Content-Type', 'text/plain');
+  res.status(200).send("Hello Express");
 });
 
 app.get("/notification/user/:userid" , async (req, res) => {
