@@ -30,7 +30,7 @@ const corsOptions = {
 }
 
 app.use(cookieParser());
-// app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // const documentName = 'notification_users';
