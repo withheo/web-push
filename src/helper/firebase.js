@@ -2,7 +2,9 @@ const firebaseAdmin = require('firebase-admin');
 const firestore = require('firebase/firestore');
 const firebaseApp = require('firebase/app');
 // const firebaseServiceAccount = require('../config/firebaseServiceAccountKey.json');
+// 알림 서비스관련 
 const firebaseServiceAccount2 = require('../config/firebaseServiceAccountKeys.json');
+//firebase 관련
 const firebaseSdk2 = require('../config/firebaseSDKs.json');
 
 const documentName = 'notification_users';
@@ -30,7 +32,10 @@ const encrypt = () => {
 const firebaseServiceAccount = decrypt(firebaseServiceAccount2.key, cryptoKey);
 const firebaseSdk = decrypt(firebaseSdk2.key, cryptoKey);
 
-const firebaseAdminApp = firebaseAdmin.initializeApp(firebaseServiceAccount);
+const firebaseAdminApp = firebaseAdmin.initializeApp({
+  credential: firebaseAdmin.credential.cert(firebaseServiceAccount)
+});
+/// console.log(firebaseAdminApp.messaging());
 
 const firebaseAppInstance = firebaseApp.initializeApp(firebaseSdk);
 

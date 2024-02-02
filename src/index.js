@@ -30,7 +30,7 @@ const corsOptions = {
 }
 
 app.use(cookieParser());
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 app.use(express.json());
 
 // const documentName = 'notification_users';
@@ -130,10 +130,10 @@ const sendNotificationUser = async (token, data) => {
   const messages = {
     token,
     data,
-    notification: {
-      title: "알림",
-      body: "내용"
-    },
+    // notification: {
+    //   title: "알림",
+    //   body: "내용"
+    // },
     android: {
       priority: "high"
     },
