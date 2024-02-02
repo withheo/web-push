@@ -2,12 +2,14 @@ const crypto = require('crypto-js');
 
 const cryptoKey = 'noti-server';
 
-///const firebaseServiceAccount2 = require('./config/firebaseServiceAccountKeys.json');
+const firebaseServiceAccount2 = require('./config/firebaseServiceAccountKeys.json');
 
 
 const firebaseConfig = {
- 
-}
+  
+};
+
+
 
 const decrypt = (text, key) => {
   try {
@@ -27,22 +29,27 @@ const encrypt = () => {
   //const b = crypto.AES.encrypt(JSON.stringify(firebaseConfig2), "noti-server").toString();
 
   console.log(a);
+
+  //const b = decrypt(a, cryptoKey);
+  //console.log(b);
   //console.log(" **** ")
  
   //console.log(b);
    // return a;
 }
 
-// const x = encrypt();
-// const a = decrypt(x, cryptoKey);
-// console.log(a);
+
 
 // const firebaseAdminApp = firebaseAdmin.initializeApp({
 //   credential: firebaseAdmin.credential.cert(firebaseServiceAccount)
 // });
-// encrypt();
-
 encrypt();
+
+const x = encrypt();
+//const a = decrypt(firebaseServiceAccount2.key, cryptoKey);
+//console.log(a);
+
+// encrypt();
 
 
 //notification_users

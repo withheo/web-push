@@ -30,9 +30,7 @@ const encrypt = () => {
 const firebaseServiceAccount = decrypt(firebaseServiceAccount2.key, cryptoKey);
 const firebaseSdk = decrypt(firebaseSdk2.key, cryptoKey);
 
-const firebaseAdminApp = firebaseAdmin.initializeApp({
-  credential: firebaseAdmin.credential.cert(firebaseServiceAccount)
-});
+const firebaseAdminApp = firebaseAdmin.initializeApp(firebaseServiceAccount);
 
 const firebaseAppInstance = firebaseApp.initializeApp(firebaseSdk);
 
